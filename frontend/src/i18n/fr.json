@@ -61,7 +61,9 @@
     "save": "Sauvegarder",
     "saved": "✓ Sauvegardé",
     "close": "Fermer",
-    "language": "Langue"    
+    "language": "Langue",
+    "export_fields": "Champs à exporter",
+    "export_all_fields": "Tous les champs (par défaut)"    
   },
   "about": {
     "close": "Fermer",
@@ -86,9 +88,7 @@
     "csv_desc": "Google Contacts format",
     "xml_desc": "xCard (RFC 6351)",
     "export_selected": "Export ({{count}})",
-    "export_all": "Export ({{count}})",
-    "export_fields": "Champs à exporter",
-    "export_all_fields": "Tous les champs (par défaut)"
+    "export_all": "Export ({{count}})"
   },
   "import": {
     "title": "Importer des contacts",

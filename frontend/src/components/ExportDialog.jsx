@@ -42,11 +42,11 @@ export default function ExportDialog({
   const generateContent = (contactList) => {
     switch (format) {
       case "json":
-        return toJCard(contactList);
+        return toJCard(contactList, exportFields);
       case "csv":
-        return toCSV(contactList);
+        return toCSV(contactList, exportFields);
       case "xml":
-        return toXCard(contactList);
+        return toXCard(contactList, exportFields);
       default:
         return contactList
           .map((c) => generateVCard(c, exportFields))

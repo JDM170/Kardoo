@@ -7,17 +7,17 @@
 
 // ─── jCard (RFC 7095) ────────────────────────────────────────────────────────
 
-function contactToJCard(c) {
+function contactToJCard(c, has) {
   const props = [];
 
-  // VERSION — doit être en premier (RFC 7095 §3.3.1.1)
   props.push(["version", {}, "text", "4.0"]);
 
-  // FN — obligatoire
-  if (c.fn) props.push(["fn", {}, "text", c.fn]);
+  if (has("fn") && c.fn) props.push(["fn", {}, "text", c.fn]);
 
-  // N — structured value as array
-  if (c.lastName || c.firstName || c.middleName || c.prefix || c.suffix) {
+  if (
+    has("n") &&
+    (c.lastName || c.firstName || c.middleName || c.prefix || c.suffix)
+  ) {
     props.push([
       "n",
       {},
@@ -32,118 +32,124 @@ function contactToJCard(c) {
     ]);
   }
 
-  // ORG
-  if (c.org) props.push(["org", {}, "text", c.org]);
-
-  // TITLE
-  if (c.title) props.push(["title", {}, "text", c.title]);
-
-  // ROLE
-  if (c.role) props.push(["role", {}, "text", c.role]);
-
-  // NICKNAME
-  if (c.nickname) props.push(["nickname", {}, "text", c.nickname]);
-
-  // BDAY
-  if (c.bday) props.push(["bday", {}, "date", c.bday]);
-
-  // ANNIVERSARY
-  if (c.anniversary) props.push(["anniversary", {}, "date", c.anniversary]);
-
-  // GENDER
-  if (c.gender) props.push(["gender", {}, "text", c.gender]);
-
-  // NOTE
-  if (c.note) props.push(["note", {}, "text", c.note]);
-
-  // GEO
-  if (c.geo) props.push(["geo", {}, "uri", c.geo]);
-
-  // TZ
-  if (c.tz) props.push(["tz", {}, "text", c.tz]);
-
-  // UID
-  if (c.uid)
+  if (has("org") && c.org) props.push(["org", {}, "text", c.org]);
+  if (has("title") && c.title) props.push(["title", {}, "text", c.title]);
+  if (has("role") && c.role) props.push(["role", {}, "text", c.role]);
+  if (has("nickname") && c.nickname)
+    props.push(["nickname", {}, "text", c.nickname]);
+  if (has("bday") && c.bday) props.push(["bday", {}, "date", c.bday]);
+  if (has("anniversary") && c.anniversary)
+    props.push(["anniversary", {}, "date", c.anniversary]);
+  if (has("gender") && c.gender) props.push(["gender", {}, "text", c.gender]);
+  if (has("note") && c.note) props.push(["note", {}, "text", c.note]);
+  if (has("geo") && c.geo) props.push(["geo", {}, "uri", c.geo]);
+  if (has("tz") && c.tz) props.push(["tz", {}, "text", c.tz]);
+  if (has("uid") && c.uid)
     props.push([
       "uid",
       {},
       "uri",
       c.uid.startsWith("urn:") ? c.uid : `urn:uuid:${c.uid}`,
     ]);
+  if (has("rev") && c.rev) props.push(["rev", {}, "timestamp", c.rev]);
+  if (has("categories") && c.categories)
+    props.push(["categories", {}, "text", c.categories]);
 
-  // REV
-  if (c.rev) props.push(["rev", {}, "timestamp", c.rev]);
-
-  // KIND
   if (c.kind && c.kind !== "individual")
     props.push(["kind", {}, "text", c.kind]);
 
-  // CATEGORIES
-  if (c.categories) props.push(["categories", {}, "text", c.categories]);
+  if (has("tel")) {
+    c.tel?.forEach((t) => {
+      if (!t.value) return;
+      props.push([
+        "tel",
+        t.type ? { type: [t.type.toLowerCase()] } : {},
+        "uri",
+        `tel:${t.value}`,
+      ]);
+    });
+  }
 
-  // TEL
-  c.tel?.forEach((t) => {
-    if (!t.value) return;
-    const params = t.type ? { type: [t.type.toLowerCase()] } : {};
-    props.push(["tel", params, "uri", `tel:${t.value}`]);
-  });
+  if (has("email")) {
+    c.email?.forEach((e) => {
+      if (!e.value) return;
+      props.push([
+        "email",
+        e.type ? { type: [e.type.toLowerCase()] } : {},
+        "text",
+        e.value,
+      ]);
+    });
+  }
 
-  // EMAIL
-  c.email?.forEach((e) => {
-    if (!e.value) return;
-    const params = e.type ? { type: [e.type.toLowerCase()] } : {};
-    props.push(["email", params, "text", e.value]);
-  });
+  if (has("adr")) {
+    c.adr?.forEach((a) => {
+      if (!a.raw) return;
+      props.push([
+        "adr",
+        a.type ? { type: [a.type.toLowerCase()] } : {},
+        "text",
+        [
+          a.raw[0] || "",
+          a.raw[1] || "",
+          a.raw[2] || "",
+          a.raw[3] || "",
+          a.raw[4] || "",
+          a.raw[5] || "",
+          a.raw[6] || "",
+        ],
+      ]);
+    });
+  }
 
-  // ADR — structured value
-  c.adr?.forEach((a) => {
-    if (!a.raw) return;
-    const params = a.type ? { type: [a.type.toLowerCase()] } : {};
-    props.push([
-      "adr",
-      params,
-      "text",
-      [
-        a.raw[0] || "", // PO box
-        a.raw[1] || "", // extended
-        a.raw[2] || "", // street
-        a.raw[3] || "", // city
-        a.raw[4] || "", // region
-        a.raw[5] || "", // postal code
-        a.raw[6] || "", // country
-      ],
-    ]);
-  });
+  if (has("url")) {
+    c.url?.forEach((u) => {
+      if (!u.value) return;
+      props.push([
+        "url",
+        u.type ? { type: [u.type.toLowerCase()] } : {},
+        "uri",
+        u.value,
+      ]);
+    });
+  }
 
-  // URL
-  c.url?.forEach((u) => {
-    if (!u.value) return;
-    const params = u.type ? { type: [u.type.toLowerCase()] } : {};
-    props.push(["url", params, "uri", u.value]);
-  });
+  if (has("lang")) {
+    c.lang?.forEach((l) => {
+      if (!l.value) return;
+      props.push([
+        "lang",
+        l.pref ? { pref: l.pref } : {},
+        "language-tag",
+        l.value,
+      ]);
+    });
+  }
 
-  // LANG
-  c.lang?.forEach((l) => {
-    if (!l.value) return;
-    const params = l.pref ? { pref: l.pref } : {};
-    props.push(["lang", params, "language-tag", l.value]);
-  });
+  if (has("impp")) {
+    c.impp?.forEach((i) => {
+      if (!i.value) return;
+      props.push([
+        "impp",
+        i.type ? { type: [i.type.toLowerCase()] } : {},
+        "uri",
+        i.value,
+      ]);
+    });
+  }
 
-  // IMPP
-  c.impp?.forEach((i) => {
-    if (!i.value) return;
-    const params = i.type ? { type: [i.type.toLowerCase()] } : {};
-    props.push(["impp", params, "uri", i.value]);
-  });
+  if (has("related")) {
+    c.related?.forEach((r) => {
+      if (!r.value) return;
+      props.push([
+        "related",
+        r.type ? { type: [r.type.toLowerCase()] } : {},
+        "text",
+        r.value,
+      ]);
+    });
+  }
 
-  // RELATED
-  c.related?.forEach((r) => {
-    if (!r.value) return;
-    const params = r.type ? { type: [r.type.toLowerCase()] } : {};
-    props.push(["related", params, "text", r.value]);
-  });
-
-  // MEMBER (pour les groupes)
   if (c.kind === "group") {
     c.members?.forEach((m) => {
       if (!m.value) return;
@@ -156,8 +162,10 @@ function contactToJCard(c) {
   return ["vcard", props];
 }
 
-export function toJCard(contacts) {
-  const jcards = contacts.map(contactToJCard);
+export function toJCard(contacts, exportFields = []) {
+  const all = exportFields.length === 0;
+  const has = (field) => all || exportFields.includes(field);
+  const jcards = contacts.map((c) => contactToJCard(c, has));
   return JSON.stringify(jcards.length === 1 ? jcards[0] : jcards, null, 2);
 }
 
@@ -196,13 +204,16 @@ function prop(name, params, valueType, value) {
   return lines.join("\n");
 }
 
-function contactToXCard(c) {
+function contactToXCard(c, has) {
   const lines = ["  <vcard>"];
 
   lines.push(prop("version", {}, "text", "4.0"));
-  if (c.fn) lines.push(prop("fn", {}, "text", c.fn));
+  if (has("fn") && c.fn) lines.push(prop("fn", {}, "text", c.fn));
 
-  if (c.lastName || c.firstName || c.middleName || c.prefix || c.suffix) {
+  if (
+    has("n") &&
+    (c.lastName || c.firstName || c.middleName || c.prefix || c.suffix)
+  ) {
     lines.push(`    <n>`);
     lines.push(`      <surname>${esc(c.lastName)}</surname>`);
     lines.push(`      <given>${esc(c.firstName)}</given>`);
@@ -212,17 +223,20 @@ function contactToXCard(c) {
     lines.push(`    </n>`);
   }
 
-  if (c.org) lines.push(prop("org", {}, "text", c.org));
-  if (c.title) lines.push(prop("title", {}, "text", c.title));
-  if (c.role) lines.push(prop("role", {}, "text", c.role));
-  if (c.nickname) lines.push(prop("nickname", {}, "text", c.nickname));
-  if (c.bday) lines.push(prop("bday", {}, "date", c.bday));
-  if (c.anniversary) lines.push(prop("anniversary", {}, "date", c.anniversary));
-  if (c.gender) lines.push(prop("gender", {}, "sex", c.gender));
-  if (c.note) lines.push(prop("note", {}, "text", c.note));
-  if (c.geo) lines.push(prop("geo", {}, "uri", c.geo));
-  if (c.tz) lines.push(prop("tz", {}, "text", c.tz));
-  if (c.uid)
+  if (has("org") && c.org) lines.push(prop("org", {}, "text", c.org));
+  if (has("title") && c.title) lines.push(prop("title", {}, "text", c.title));
+  if (has("role") && c.role) lines.push(prop("role", {}, "text", c.role));
+  if (has("nickname") && c.nickname)
+    lines.push(prop("nickname", {}, "text", c.nickname));
+  if (has("bday") && c.bday) lines.push(prop("bday", {}, "date", c.bday));
+  if (has("anniversary") && c.anniversary)
+    lines.push(prop("anniversary", {}, "date", c.anniversary));
+  if (has("gender") && c.gender)
+    lines.push(prop("gender", {}, "sex", c.gender));
+  if (has("note") && c.note) lines.push(prop("note", {}, "text", c.note));
+  if (has("geo") && c.geo) lines.push(prop("geo", {}, "uri", c.geo));
+  if (has("tz") && c.tz) lines.push(prop("tz", {}, "text", c.tz));
+  if (has("uid") && c.uid)
     lines.push(
       prop(
         "uid",
@@ -231,64 +245,108 @@ function contactToXCard(c) {
         c.uid.startsWith("urn:") ? c.uid : `urn:uuid:${c.uid}`,
       ),
     );
-  if (c.rev) lines.push(prop("rev", {}, "timestamp", c.rev));
+  if (has("rev") && c.rev) lines.push(prop("rev", {}, "timestamp", c.rev));
   if (c.kind && c.kind !== "individual")
     lines.push(prop("kind", {}, "text", c.kind));
-  if (c.categories) lines.push(prop("categories", {}, "text", c.categories));
+  if (has("categories") && c.categories)
+    lines.push(prop("categories", {}, "text", c.categories));
 
-  c.tel?.forEach((t) => {
-    if (!t.value) return;
-    const params = t.type ? { type: [t.type.toLowerCase()] } : {};
-    lines.push(prop("tel", params, "uri", `tel:${t.value}`));
-  });
+  if (has("tel")) {
+    c.tel?.forEach((t) => {
+      if (!t.value) return;
+      lines.push(
+        prop(
+          "tel",
+          t.type ? { type: [t.type.toLowerCase()] } : {},
+          "uri",
+          `tel:${t.value}`,
+        ),
+      );
+    });
+  }
 
-  c.email?.forEach((e) => {
-    if (!e.value) return;
-    const params = e.type ? { type: [e.type.toLowerCase()] } : {};
-    lines.push(prop("email", params, "text", e.value));
-  });
+  if (has("email")) {
+    c.email?.forEach((e) => {
+      if (!e.value) return;
+      lines.push(
+        prop(
+          "email",
+          e.type ? { type: [e.type.toLowerCase()] } : {},
+          "text",
+          e.value,
+        ),
+      );
+    });
+  }
 
-  c.adr?.forEach((a) => {
-    if (!a.raw) return;
-    const params = a.type ? { type: [a.type.toLowerCase()] } : {};
-    const paramStr =
-      Object.keys(params).length > 0
+  if (has("adr")) {
+    c.adr?.forEach((a) => {
+      if (!a.raw) return;
+      const paramStr = a.type
         ? `\n      <parameters>\n        <type><text>${esc(a.type.toLowerCase())}</text></type>\n      </parameters>`
         : "";
-    lines.push(`    <adr>${paramStr}`);
-    lines.push(`      <pobox>${esc(a.raw[0])}</pobox>`);
-    lines.push(`      <ext>${esc(a.raw[1])}</ext>`);
-    lines.push(`      <street>${esc(a.raw[2])}</street>`);
-    lines.push(`      <locality>${esc(a.raw[3])}</locality>`);
-    lines.push(`      <region>${esc(a.raw[4])}</region>`);
-    lines.push(`      <code>${esc(a.raw[5])}</code>`);
-    lines.push(`      <country>${esc(a.raw[6])}</country>`);
-    lines.push(`    </adr>`);
-  });
+      lines.push(`    <adr>${paramStr}`);
+      lines.push(`      <pobox>${esc(a.raw[0])}</pobox>`);
+      lines.push(`      <ext>${esc(a.raw[1])}</ext>`);
+      lines.push(`      <street>${esc(a.raw[2])}</street>`);
+      lines.push(`      <locality>${esc(a.raw[3])}</locality>`);
+      lines.push(`      <region>${esc(a.raw[4])}</region>`);
+      lines.push(`      <code>${esc(a.raw[5])}</code>`);
+      lines.push(`      <country>${esc(a.raw[6])}</country>`);
+      lines.push(`    </adr>`);
+    });
+  }
 
-  c.url?.forEach((u) => {
-    if (!u.value) return;
-    const params = u.type ? { type: [u.type.toLowerCase()] } : {};
-    lines.push(prop("url", params, "uri", u.value));
-  });
+  if (has("url")) {
+    c.url?.forEach((u) => {
+      if (!u.value) return;
+      lines.push(
+        prop(
+          "url",
+          u.type ? { type: [u.type.toLowerCase()] } : {},
+          "uri",
+          u.value,
+        ),
+      );
+    });
+  }
 
-  c.lang?.forEach((l) => {
-    if (!l.value) return;
-    const params = l.pref ? { pref: l.pref } : {};
-    lines.push(prop("lang", params, "language-tag", l.value));
-  });
+  if (has("lang")) {
+    c.lang?.forEach((l) => {
+      if (!l.value) return;
+      lines.push(
+        prop("lang", l.pref ? { pref: l.pref } : {}, "language-tag", l.value),
+      );
+    });
+  }
 
-  c.impp?.forEach((i) => {
-    if (!i.value) return;
-    const params = i.type ? { type: [i.type.toLowerCase()] } : {};
-    lines.push(prop("impp", params, "uri", i.value));
-  });
+  if (has("impp")) {
+    c.impp?.forEach((i) => {
+      if (!i.value) return;
+      lines.push(
+        prop(
+          "impp",
+          i.type ? { type: [i.type.toLowerCase()] } : {},
+          "uri",
+          i.value,
+        ),
+      );
+    });
+  }
 
-  c.related?.forEach((r) => {
-    if (!r.value) return;
-    const params = r.type ? { type: [r.type.toLowerCase()] } : {};
-    lines.push(prop("related", params, "text", r.value));
-  });
+  if (has("related")) {
+    c.related?.forEach((r) => {
+      if (!r.value) return;
+      lines.push(
+        prop(
+          "related",
+          r.type ? { type: [r.type.toLowerCase()] } : {},
+          "text",
+          r.value,
+        ),
+      );
+    });
+  }
 
   if (c.kind === "group") {
     c.members?.forEach((m) => {
@@ -303,11 +361,13 @@ function contactToXCard(c) {
   return lines.join("\n");
 }
 
-export function toXCard(contacts) {
+export function toXCard(contacts, exportFields = []) {
+  const all = exportFields.length === 0;
+  const has = (field) => all || exportFields.includes(field);
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<vcards xmlns="${XCARD_NS}">`,
-    ...contacts.map(contactToXCard),
+    ...contacts.map((c) => contactToXCard(c, has)),
     "</vcards>",
   ];
   return lines.join("\n");
@@ -315,48 +375,9 @@ export function toXCard(contacts) {
 
 // ─── CSV (format Google Contacts) ────────────────────────────────────────────
 
-export function toCSV(contacts) {
-  const headers = [
-    "Name",
-    "Given Name",
-    "Additional Name",
-    "Family Name",
-    "Name Prefix",
-    "Name Suffix",
-    "Organization 1 - Name",
-    "Organization 1 - Title",
-    "Organization 1 - Department",
-    "Nickname",
-    "Birthday",
-    "Gender",
-    "Notes",
-    "Phone 1 - Type",
-    "Phone 1 - Value",
-    "Phone 2 - Type",
-    "Phone 2 - Value",
-    "Phone 3 - Type",
-    "Phone 3 - Value",
-    "E-mail 1 - Type",
-    "E-mail 1 - Value",
-    "E-mail 2 - Type",
-    "E-mail 2 - Value",
-    "Address 1 - Type",
-    "Address 1 - Street",
-    "Address 1 - City",
-    "Address 1 - Region",
-    "Address 1 - Postal Code",
-    "Address 1 - Country",
-    "Address 2 - Type",
-    "Address 2 - Street",
-    "Address 2 - City",
-    "Address 2 - Region",
-    "Address 2 - Postal Code",
-    "Address 2 - Country",
-    "Website 1 - Type",
-    "Website 1 - Value",
-    "Website 2 - Type",
-    "Website 2 - Value",
-  ];
+export function toCSV(contacts, exportFields = []) {
+  const all = exportFields.length === 0;
+  const has = (field) => all || exportFields.includes(field);
 
   const csvEsc = (val) => {
     const s = String(val || "");
@@ -365,50 +386,156 @@ export function toCSV(contacts) {
       : s;
   };
 
+  // Construction dynamique des headers et valeurs selon exportFields
+  const columns = [
+    { field: "fn", header: "Name", val: (c) => c.fn },
+    { field: "n", header: "Given Name", val: (c) => c.firstName },
+    { field: "n", header: "Additional Name", val: (c) => c.middleName },
+    { field: "n", header: "Family Name", val: (c) => c.lastName },
+    { field: "n", header: "Name Prefix", val: (c) => c.prefix },
+    { field: "n", header: "Name Suffix", val: (c) => c.suffix },
+    { field: "org", header: "Organization 1 - Name", val: (c) => c.org },
+    { field: "title", header: "Organization 1 - Title", val: (c) => c.title },
+    { field: "org", header: "Organization 1 - Department", val: () => "" },
+    { field: "nickname", header: "Nickname", val: (c) => c.nickname },
+    { field: "bday", header: "Birthday", val: (c) => c.bday },
+    { field: "gender", header: "Gender", val: (c) => c.gender },
+    { field: "note", header: "Notes", val: (c) => c.note },
+    {
+      field: "tel",
+      header: "Phone 1 - Type",
+      val: (c) => c.tel?.[0]?.type || "",
+    },
+    {
+      field: "tel",
+      header: "Phone 1 - Value",
+      val: (c) => c.tel?.[0]?.value || "",
+    },
+    {
+      field: "tel",
+      header: "Phone 2 - Type",
+      val: (c) => c.tel?.[1]?.type || "",
+    },
+    {
+      field: "tel",
+      header: "Phone 2 - Value",
+      val: (c) => c.tel?.[1]?.value || "",
+    },
+    {
+      field: "tel",
+      header: "Phone 3 - Type",
+      val: (c) => c.tel?.[2]?.type || "",
+    },
+    {
+      field: "tel",
+      header: "Phone 3 - Value",
+      val: (c) => c.tel?.[2]?.value || "",
+    },
+    {
+      field: "email",
+      header: "E-mail 1 - Type",
+      val: (c) => c.email?.[0]?.type || "",
+    },
+    {
+      field: "email",
+      header: "E-mail 1 - Value",
+      val: (c) => c.email?.[0]?.value || "",
+    },
+    {
+      field: "email",
+      header: "E-mail 2 - Type",
+      val: (c) => c.email?.[1]?.type || "",
+    },
+    {
+      field: "email",
+      header: "E-mail 2 - Value",
+      val: (c) => c.email?.[1]?.value || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - Type",
+      val: (c) => c.adr?.[0]?.type || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - Street",
+      val: (c) => c.adr?.[0]?.raw?.[2] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - City",
+      val: (c) => c.adr?.[0]?.raw?.[3] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - Region",
+      val: (c) => c.adr?.[0]?.raw?.[4] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - Postal Code",
+      val: (c) => c.adr?.[0]?.raw?.[5] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 1 - Country",
+      val: (c) => c.adr?.[0]?.raw?.[6] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - Type",
+      val: (c) => c.adr?.[1]?.type || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - Street",
+      val: (c) => c.adr?.[1]?.raw?.[2] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - City",
+      val: (c) => c.adr?.[1]?.raw?.[3] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - Region",
+      val: (c) => c.adr?.[1]?.raw?.[4] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - Postal Code",
+      val: (c) => c.adr?.[1]?.raw?.[5] || "",
+    },
+    {
+      field: "adr",
+      header: "Address 2 - Country",
+      val: (c) => c.adr?.[1]?.raw?.[6] || "",
+    },
+    {
+      field: "url",
+      header: "Website 1 - Type",
+      val: (c) => c.url?.[0]?.type || "",
+    },
+    {
+      field: "url",
+      header: "Website 1 - Value",
+      val: (c) => c.url?.[0]?.value || "",
+    },
+    {
+      field: "url",
+      header: "Website 2 - Type",
+      val: (c) => c.url?.[1]?.type || "",
+    },
+    {
+      field: "url",
+      header: "Website 2 - Value",
+      val: (c) => c.url?.[1]?.value || "",
+    },
+  ].filter((col) => has(col.field));
+
+  const headers = columns.map((col) => col.header);
   const rows = contacts.map((c) =>
-    [
-      c.fn,
-      c.firstName,
-      c.middleName,
-      c.lastName,
-      c.prefix,
-      c.suffix,
-      c.org,
-      c.title,
-      "",
-      c.nickname,
-      c.bday,
-      c.gender,
-      c.note,
-      c.tel?.[0]?.type || "",
-      c.tel?.[0]?.value || "",
-      c.tel?.[1]?.type || "",
-      c.tel?.[1]?.value || "",
-      c.tel?.[2]?.type || "",
-      c.tel?.[2]?.value || "",
-      c.email?.[0]?.type || "",
-      c.email?.[0]?.value || "",
-      c.email?.[1]?.type || "",
-      c.email?.[1]?.value || "",
-      c.adr?.[0]?.type || "",
-      c.adr?.[0]?.raw?.[2] || "",
-      c.adr?.[0]?.raw?.[3] || "",
-      c.adr?.[0]?.raw?.[4] || "",
-      c.adr?.[0]?.raw?.[5] || "",
-      c.adr?.[0]?.raw?.[6] || "",
-      c.adr?.[1]?.type || "",
-      c.adr?.[1]?.raw?.[2] || "",
-      c.adr?.[1]?.raw?.[3] || "",
-      c.adr?.[1]?.raw?.[4] || "",
-      c.adr?.[1]?.raw?.[5] || "",
-      c.adr?.[1]?.raw?.[6] || "",
-      c.url?.[0]?.type || "",
-      c.url?.[0]?.value || "",
-      c.url?.[1]?.type || "",
-      c.url?.[1]?.value || "",
-    ]
-      .map(csvEsc)
-      .join(","),
+    columns.map((col) => csvEsc(col.val(c))).join(","),
   );
 
   return [headers.join(","), ...rows].join("\n");
