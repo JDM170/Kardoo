@@ -69,7 +69,8 @@
     "close": "Fermer",
     "description": "A tool to edit (Modify, delete) VCF files.",
     "subtitle": "Manage your vCard contacts with ease.",
-    "copyright": "© 2025 abdelkader · All rights reserved"
+    "copyright": "© 2025 abdelkader · All rights reserved",
+    "support": "Support"
   },
   "export": {
     "title": "Exporter {{count}} contact",
