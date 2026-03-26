@@ -154,7 +154,17 @@ export default function App() {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: "8px",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      }}
+    >
       <TitleBar currentFilePath={currentFilePath} isDirty={isDirty} />
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <IconBar
