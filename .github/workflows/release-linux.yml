@@ -112,8 +112,38 @@ jobs:
           Architecture: amd64
           Depends: libgtk-3-0, ${{ matrix.webkit_runtime }}
           Maintainer: abdelkader
+          Homepage: https://github.com/abdelkader/kardoo
           Description: Kardoo
            A simple and clean desktop tool to view, edit and manage your VCF (vCard) contact files.
+          EOF
+
+      - name: Create copyright file
+        run: |
+          mkdir -p build/linux/$PKG/usr/share/doc/kardoo
+          cat > build/linux/$PKG/usr/share/doc/kardoo/copyright << 'EOF'
+          Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+          Upstream-Name: kardoo
+          Upstream-Contact: abdelkader
+          Source: https://github.com/abdelkader/kardoo
+
+          Files: *
+          Copyright: 2025 abdelkader
+          License: MIT
+
+          License: MIT
+           Permission is hereby granted, free of charge, to any person obtaining a
+           copy of this software and associated documentation files (the "Software"),
+           to deal in the Software without restriction, including without limitation
+           the rights to use, copy, modify, merge, publish, distribute, sublicense,
+           and/or sell copies of the Software, and to permit persons to whom the
+           Software is furnished to do so, subject to the following conditions:
+           .
+           The above copyright notice and this permission notice shall be included
+           in all copies or substantial portions of the Software.
+           .
+           THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+           OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+           FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
           EOF
 
       - name: Create desktop file
