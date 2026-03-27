@@ -10,10 +10,14 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed build/appicon.png
+var icon []byte
 
 func main() {
 	app := NewApp()
@@ -48,7 +52,12 @@ func main() {
 			DisableWebViewDrop: true,
 		},
 		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
-		OnStartup:        app.startup,
+		Linux: &linux.Options{
+			ProgramName:         "Kardoo",
+			Icon:                icon,
+			WindowIsTranslucent: true,
+		},
+		OnStartup: app.startup,
 		OnBeforeClose: func(ctx context.Context) bool {
 			app.saveWindowState(ctx)
 			return false

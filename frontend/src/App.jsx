@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { Modal, Empty } from "antd";
 import { generateAllVCards } from "./utils/vcard";
 import { LoadConfig, SaveVCardFile } from "../wailsjs/go/main/App";
-import { OnFileDrop } from "../wailsjs/runtime/runtime";
+import {
+  OnFileDrop,
+  WindowIsMaximised,
+  EventsOn,
+} from "../wailsjs/runtime/runtime";
 import { useContacts } from "./hooks/useContacts";
 import IconBar from "./components/IconBar";
 import ContactTree from "./components/ContactTree";
@@ -21,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { App as AntApp } from "antd";
 
 export default function App() {
+  const [hideRadius, setHideRadius] = useState(false);
   const [search, setSearch] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -92,6 +97,25 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDirty, displayedContact]);
 
+  useEffect(() => {
+    WindowIsMaximised().then((m) => setHideRadius(m));
+    EventsOn("window_changed", ({ maximised, fullscreen }) => {
+      setHideRadius(maximised || fullscreen);
+    });
+  }, []);
+
+  const wrapperStyle = hideRadius
+    ? { display: "flex", flexDirection: "column", height: "100vh" }
+    : {
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        border: "1px solid #3a3f4b",
+        borderRadius: "10px",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      };
+
   const withDirtyCheck = (action) => {
     if (isDirty) setPendingAction(() => action);
     else action();
@@ -154,17 +178,7 @@ export default function App() {
   );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: "8px",
-        overflow: "hidden",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={wrapperStyle}>
       <TitleBar currentFilePath={currentFilePath} isDirty={isDirty} />
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <IconBar
