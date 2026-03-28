@@ -90,7 +90,7 @@
     "xml_desc": "xCard (RFC 6351)",
     "export_selected": "Export ({{count}})",
     "export_all": "Export ({{count}})",
-     "no_contacts": "No contacts to export"
+     "no_contacts": "No contacts loaded"
   },
   "import": {
     "title": "Importer des contacts",
