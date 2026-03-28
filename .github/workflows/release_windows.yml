@@ -6,30 +6,48 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Version tag"
+        description: 'Version tag'
         required: true
-        default: "1.0.0"
+        default: '1.0.0'
 
 jobs:
-  release-windows:
-    name: Release Windows
-    runs-on: windows-latest
-
+  prepare:
+    name: Prepare version tag
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.normalise_version.outputs.version }}
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
       - name: Normalise version tag
         id: normalise_version
         shell: bash
         run: |
           if [ "${{ github.event.release.tag_name }}" == "" ]; then
             version=$(echo ${{ github.event.inputs.tag }} | sed -e 's/v//g')
-            echo "version=$version" >> "$GITHUB_OUTPUT"
           else
             version=$(echo ${{ github.event.release.tag_name }} | sed -e 's/v//g')
-            echo "version=$version" >> "$GITHUB_OUTPUT"
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  release-windows:
+    name: Release Windows (${{ matrix.arch }})
+    needs: prepare
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: windows/amd64
+            suffix: x64
+            installer_name: amd64
+          - arch: arm64
+            platform: windows/arm64
+            suffix: arm64
+            installer_name: arm64
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -37,44 +55,68 @@ jobs:
           go-version: stable
           cache: true
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Install Chocolatey packages
+        uses: crazy-max/ghaction-chocolatey@v2
         with:
-          node-version: 20
+          args: install nsis jq
 
       - name: Install Wails
         shell: bash
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Build frontend assets
         shell: bash
         run: |
           npm install -g npm@latest
           cd frontend
-          jq '.version = "${{ steps.normalise_version.outputs.version }}"' package.json > tmp.json
+          jq '.version = "${{ needs.prepare.outputs.version }}"' package.json > tmp.json
           mv tmp.json package.json
           npm install
 
       - name: Update Wails version
         shell: bash
         run: |
-          jq '.info.productVersion = "${{ steps.normalise_version.outputs.version }}"' wails.json > tmp.json
+          jq '.info.productVersion = "${{ needs.prepare.outputs.version }}"' wails.json > tmp.json
           mv tmp.json wails.json
 
       - name: Build Windows portable app
         shell: bash
         run: |
-          CGO_ENABLED=1 wails build -clean -platform windows/amd64 \
+          CGO_ENABLED=1 wails build -clean -platform ${{ matrix.platform }} \
           -webview2 embed \
-          -ldflags "-X main.version=v${{ steps.normalise_version.outputs.version }}"
+          -ldflags "-X main.version=v${{ needs.prepare.outputs.version }}"
 
       - name: Compress portable binary
         working-directory: ./build/bin
-        run: Compress-Archive "Kardoo.exe" "Kardoo_Portable_${{ steps.normalise_version.outputs.version }}_windows_x64.zip"
+        run: Compress-Archive "Kardoo.exe" "Kardoo_Portable_${{ needs.prepare.outputs.version }}_windows_${{ matrix.suffix }}.zip"
 
-      - name: Upload release asset (Portable)
+      - name: Upload portable
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.normalise_version.outputs.version }}
-          files: ./build/bin/Kardoo_Portable_${{ steps.normalise_version.outputs.version }}_windows_x64.zip
+          tag_name: v${{ needs.prepare.outputs.version }}
+          files: ./build/bin/Kardoo_Portable_${{ needs.prepare.outputs.version }}_windows_${{ matrix.suffix }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Windows NSIS installer
+        shell: bash
+        run: |
+          export PATH="/c/Program Files (x86)/NSIS:$PATH"
+          CGO_ENABLED=1 wails build -clean -platform ${{ matrix.platform }} \
+          -nsis -webview2 embed \
+          -ldflags "-X main.version=v${{ needs.prepare.outputs.version }}"
+
+      - name: Rename installer
+        working-directory: ./build/bin
+        run: Rename-Item -Path "kardoo-${{ matrix.installer_name }}-installer.exe" -NewName "Kardoo_Setup_${{ needs.prepare.outputs.version }}_windows_${{ matrix.suffix }}.exe"
+
+      - name: Upload installer
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          files: ./build/bin/Kardoo_Setup_${{ needs.prepare.outputs.version }}_windows_${{ matrix.suffix }}.exe
           token: ${{ secrets.GITHUB_TOKEN }}
