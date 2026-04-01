@@ -159,5 +159,16 @@
   "duplicate": "Dupliquer",
   "export": "Exporter",
   "delete": "Supprimer"
+  },
+  "qrcode": {
+    "too_large_data": "Données trop volumineuses pour un QR code. Désactivez la photo.",
+    "photo": "Inclure la photo",
+    "limit_warning": "⚠️ Risque de dépasser la limite",
+    "char_count": "Taille: {{count}} caractères",
+    "approx_limit": "limite approchée",
+    "too_bulky": "trop volumineux!",
+    "scan_qr": "Scannez avec l'app Contacts de votre téléphone",
+    "download_png": "Télécharger PNG",
+    "close": "Fermer"
   }
 }
